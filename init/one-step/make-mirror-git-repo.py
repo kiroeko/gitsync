@@ -256,6 +256,18 @@ def main() -> int:
 
         Logger.info("End of Configuration Parsing.")
 
+        git_config_global_coreautocrlf_false_cmd = [
+            "git",
+            "config",
+            "--global",
+            "core.autocrlf",
+            "false"
+        ]
+        returncode, _, _ = run_cmd(git_config_global_coreautocrlf_false_cmd)
+        if returncode != 0:
+            Logger.error("Failed to close git autocrlf.")
+            return -3
+
         returncode = 0
         for origin_repo_url, mirror_repo_url in mirror_needed_repo_pair_list:
             if not try_make_mirror_git_repo(origin_repo_url, mirror_repo_url, local_workspace):

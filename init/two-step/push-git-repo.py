@@ -150,6 +150,18 @@ def main() -> int:
 
         Logger.info("End of Configuration Parsing.")
 
+        git_config_global_coreautocrlf_false_cmd = [
+            "git",
+            "config",
+            "--global",
+            "core.autocrlf",
+            "false"
+        ]
+        returncode, _, _ = run_cmd(git_config_global_coreautocrlf_false_cmd)
+        if returncode != 0:
+            Logger.error("Failed to close git autocrlf.")
+            return -6
+
         returncode = 0
         for local_repo_path, remote_repo_ssh_url in push_needed_repo_pair_list:
             hostname = extract_hostname_from_git_url(remote_repo_ssh_url)

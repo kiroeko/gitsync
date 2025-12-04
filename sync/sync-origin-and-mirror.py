@@ -337,6 +337,18 @@ def main() -> int:
 
         Logger.info("End of Configuration Parsing.")
 
+        git_config_global_coreautocrlf_false_cmd = [
+            "git",
+            "config",
+            "--global",
+            "core.autocrlf",
+            "false"
+        ]
+        returncode, _, _ = run_cmd(git_config_global_coreautocrlf_false_cmd)
+        if returncode != 0:
+            Logger.error("Failed to close git autocrlf.")
+            return -17
+
         # Sync between two repos.
         Logger.info("Sync between two repos.")
         
