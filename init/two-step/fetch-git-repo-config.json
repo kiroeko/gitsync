@@ -1,0 +1,9 @@
+{
+    "max-retry-times": 5,
+    "retry-cooldown-sec": 10,
+    "local-workspace": "C:/public/gitsync_workspace",
+    "fetch-needed-repos": [
+        "git@github.com:kiroeko/synctest1.git",
+        "git@github.com:kiroeko/synctest2.git"
+    ]
+}

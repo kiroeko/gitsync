@@ -1,0 +1,12 @@
+{
+    "push-needed-repos": [
+        {
+            "local-repo-path": "C:/public/gitsync_workspace/synctest1",
+            "remote-repo-ssh-url": "git@gitlab.com:kiroeko/synctest1.git"
+        },
+        {
+            "local-repo-path": "C:/public/gitsync_workspace/synctest2",
+            "remote-repo-ssh-url": "git@gitlab.com:kiroeko/synctest2.git"
+        }
+    ]
+}

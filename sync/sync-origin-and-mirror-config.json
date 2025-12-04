@@ -1,0 +1,19 @@
+{
+    "local-workspace": "C:/public/gitsync_workspace",
+    "origin-changed-branch-accept-rules": [
+        ".*"
+    ],
+    "mirror-changed-branch-accept-rules": [
+        "^mirror/"
+    ],
+    "sync-needed-repo-pairs": [
+        {
+            "origin-repo-ssh-url": "git@github.com:kiroeko/synctest1.git",
+            "mirror-empty-repo-ssh-url": "git@gitlab.com:kiroeko/synctest1.git"
+        },
+        {
+            "origin-repo-ssh-url": "git@github.com:kiroeko/synctest2.git",
+            "mirror-empty-repo-ssh-url": "git@gitlab.com:kiroeko/synctest2.git"
+        }
+    ]
+}

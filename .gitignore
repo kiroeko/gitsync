@@ -1,0 +1,19 @@
+# Visual Studio Code
+.vs/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Mac OS
+*.DS_Store
+
+# Python
+__pycache__
+venv/
+.env/
+.venv/
+*.egg-info/
+
+# Log
+.log/
