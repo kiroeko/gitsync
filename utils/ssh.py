@@ -1,5 +1,6 @@
 import os
 import re
+import traceback
 from utils import Logger
 
 def configure_ssh_host(hostname: str) -> bool:
@@ -79,5 +80,5 @@ def configure_ssh_host(hostname: str) -> bool:
             return True
             
     except Exception as e:
-        Logger.error(f"Failed to configure SSH for {hostname}: {e}")
+        Logger.error(f"Failed to configure SSH for {hostname}: {e}\n{traceback.format_exc()}")
         return False

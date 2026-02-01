@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import shutil
+import traceback
 from typing import TypedDict
 
 from utils import *
@@ -332,7 +333,7 @@ def try_sync_origin_updates_into_mirror(
         return 0
 
     except Exception as e:
-        Logger.error(f"Error: {e}")
+        Logger.error(f"Error: {e}\n{traceback.format_exc()}")
         return -1
     finally:
         os.chdir(cwd)
@@ -400,7 +401,7 @@ def main() -> int:
         return 0
 
     except Exception as e:
-        Logger.error(f"Error: {e}")
+        Logger.error(f"Error: {e}\n{traceback.format_exc()}")
         return -1
 
 

@@ -4,6 +4,7 @@ import re
 import sys
 import shutil
 import time
+import traceback
 from datetime import datetime, timezone
 
 from utils import *
@@ -188,7 +189,7 @@ def try_fetch_git_repo(
         return True
 
     except Exception as e:
-        Logger.error(f"Error: {e}")
+        Logger.error(f"Error: {e}\n{traceback.format_exc()}")
         return False
     finally:
         os.chdir(cwd)
@@ -257,7 +258,7 @@ def main() -> int:
         return returncode
 
     except Exception as e:
-        Logger.error(f"Error: {e}")
+        Logger.error(f"Error: {e}\n{traceback.format_exc()}")
         return -1
 
 
