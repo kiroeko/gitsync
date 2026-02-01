@@ -11,9 +11,8 @@ from utils import *
 def try_fetch_git_repo(
         origin_repo_url: str,
         local_workspace: str) -> bool:
+    cwd = os.getcwd()
     try:
-        cwd = os.getcwd()
-
         Logger.info(f"Try fetch git repo, origin repo url: {origin_repo_url}, local workspace: {local_workspace}.")
         origin_remote_name = "origin"
 
@@ -194,7 +193,7 @@ def try_fetch_git_repo(
 #     -4 : try multiple times, still failed.
 def main() -> int:
     try:
-        Logger.init(".log")
+        Logger.init("fetch_git_repo_log")
 
         # Configuration Parsing
         Logger.info("Configuration Parsing.")

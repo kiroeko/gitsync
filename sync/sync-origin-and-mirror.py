@@ -311,7 +311,7 @@ def try_sync_origin_updates_into_mirror(
 
 def main() -> int:
     try:
-        Logger.init(".log")
+        Logger.init("sync_origin_and_mirror_log")
 
         # Configuration Parsing
         Logger.info("Configuration Parsing.")

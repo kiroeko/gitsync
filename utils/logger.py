@@ -53,12 +53,13 @@ class Logger:
 
     @classmethod
     def _write(cls, level: str, message: str, extra: dict | None):
+        log_line = None
         try:
-            ts = cls._utc_now()
-            log_line = f"{ts} | {level} | {message} | {extra}\n\n"
-
             if not cls._initialized:
                 raise RuntimeError("Logger.init(file_path) must be called before using logger.")
+
+            ts = cls._utc_now()
+            log_line = f"{ts} | {level} | {message} | {extra}\n\n"
 
             lock = FileLock(cls._lock_path)
             with lock:
@@ -70,7 +71,8 @@ class Logger:
             print(f"Log write warning: {e}")
             return False
         finally:
-            print(log_line)
+            if log_line is not None:
+                print(log_line)
 
     # ------- public API -------
     @classmethod

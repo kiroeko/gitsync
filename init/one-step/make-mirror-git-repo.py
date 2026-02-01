@@ -10,8 +10,8 @@ from utils import *
 def try_make_mirror_git_repo(
         origin_repo_url: str, mirror_repo_url: str,
         local_workspace: str) -> bool:
+    cwd = os.getcwd()
     try:
-        cwd = os.getcwd()
 
         Logger.info(f"Try run make mirror git repo, origin repo url: {origin_repo_url}, mirror repo url: {mirror_repo_url}, local workspace: {local_workspace}.")
         origin_remote_name = "origin"

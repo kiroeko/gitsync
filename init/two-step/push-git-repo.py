@@ -8,9 +8,8 @@ from utils import *
 def try_push_git_repo(
         local_repo_path: str,
         remote_repo_url: str) -> bool:
+    cwd = os.getcwd()
     try:
-        cwd = os.getcwd()
-
         Logger.info(f"Try push repo from local repo: {local_repo_path}, remote repo url: {remote_repo_url}.")
         remote_name = "mirror"
         
@@ -127,7 +126,7 @@ def try_push_git_repo(
 #     -2 : try multiple times, still failed.
 def main() -> int:
     try:
-        Logger.init(".log")
+        Logger.init("push_git_repo_log")
 
         # Configuration Parsing
         Logger.info("Configuration Parsing.")
