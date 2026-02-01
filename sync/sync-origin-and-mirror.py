@@ -304,7 +304,8 @@ def try_sync_origin_updates_into_mirror(
             "git",
             "fetch",
             origin_remote_name,
-            "--tags"
+            "--tags",
+            "--force"
         ]
         returncode, _, _ = run_cmd(git_fetch_origin_tags_cmd)
         if returncode != 0:
