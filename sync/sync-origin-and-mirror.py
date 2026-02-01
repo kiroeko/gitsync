@@ -65,6 +65,7 @@ def try_sync_origin_updates_into_mirror(
         local_workspace: str,
         changed_branch_accept_rules: list[str]
     ) -> int:
+    cwd = os.getcwd()
     try:
         hostname = extract_hostname_from_git_url(origin_repo_url)
         if hostname:
@@ -74,8 +75,6 @@ def try_sync_origin_updates_into_mirror(
         else:
             Logger.warning(f"Failed to extract hostname from remote_repo_ssh_url: {origin_repo_url}")
             return -3
-
-        cwd = os.getcwd()
 
         Logger.info(f"Run try sync origin updates into mirror, origin is {origin_repo_url}, mirror is {mirror_repo_url}.")
         origin_remote_name = "origin"
@@ -209,7 +208,7 @@ def try_sync_origin_updates_into_mirror(
             ]
             returncode, _, _ = run_cmd(git_switch_branch_cmd)
             if returncode != 0:
-                Logger.error(f"Failed to swith to branch: {b}")
+                Logger.error(f"Failed to switch to branch: {b}")
                 return -10
             
             git_pull_origin_remote_branch_cmd = [
@@ -292,7 +291,7 @@ def try_sync_origin_updates_into_mirror(
             "git",
             "push",
             mirror_remote_name,
-            "-f"
+            "-f",
             "--tags"
         ]
         returncode, _, _ = run_cmd(git_push_tags_to_mirror_cmd)
@@ -351,14 +350,15 @@ def main() -> int:
 
         # Sync between two repos.
         Logger.info("Sync between two repos.")
-        
-        returncode = try_sync_origin_updates_into_mirror(origin_repo_url, mirror_repo_url, local_workspace, origin_changed_branch_accept_rules)
-        if returncode != 0:
-            return returncode
 
-        return_code = try_sync_origin_updates_into_mirror(mirror_repo_url, origin_repo_url, local_workspace, mirror_changed_branch_accept_rules)
-        if return_code != 0:
-            return returncode
+        for origin_repo_url, mirror_repo_url in mirror_needed_repo_pair_list:
+            returncode = try_sync_origin_updates_into_mirror(origin_repo_url, mirror_repo_url, local_workspace, origin_changed_branch_accept_rules)
+            if returncode != 0:
+                return returncode
+
+            returncode = try_sync_origin_updates_into_mirror(mirror_repo_url, origin_repo_url, local_workspace, mirror_changed_branch_accept_rules)
+            if returncode != 0:
+                return returncode
 
         return 0
 
