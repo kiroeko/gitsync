@@ -186,6 +186,7 @@ def try_sync_origin_updates_into_mirror(
 
         # Handle with origin updated branches
         Logger.info("Handle with origin updated branches")
+        has_updated_branch_error = False
         for b in origin_branch_updated:
             Logger.info(f"Handling updated origin {origin_remote_name} branch {b} into mirror {mirror_remote_name}")
 
@@ -198,9 +199,10 @@ def try_sync_origin_updates_into_mirror(
             ]
             returncode, _, _ = run_cmd(git_fetch_mirror_remote_branch_cmd)
             if returncode != 0:
-                Logger.error(f"Failed to fetch mirror remote branch {b}")
-                return -9
-            
+                Logger.error(f"Failed to fetch mirror {mirror_remote_name} branch {b}, return code: {returncode}")
+                has_updated_branch_error = True
+                continue
+
             git_switch_branch_cmd = [
                 "git",
                 "switch",
@@ -208,9 +210,10 @@ def try_sync_origin_updates_into_mirror(
             ]
             returncode, _, _ = run_cmd(git_switch_branch_cmd)
             if returncode != 0:
-                Logger.error(f"Failed to switch to branch: {b}")
-                return -10
-            
+                Logger.error(f"Failed to switch to branch {b}, return code: {returncode}")
+                has_updated_branch_error = True
+                continue
+
             git_pull_origin_remote_branch_cmd = [
                 "git",
                 "pull",
@@ -220,10 +223,15 @@ def try_sync_origin_updates_into_mirror(
             ]
             returncode, _, _ = run_cmd(git_pull_origin_remote_branch_cmd)
             if returncode != 0:
-                Logger.error(f"Failed to pull (auto merge) changes of origin {origin_repo_url} branch {b} into mirror {mirror_repo_url}.\n"
+                Logger.error(f"Failed to pull (auto merge) changes of origin {origin_repo_url} branch {b} into mirror {mirror_repo_url}, return code: {returncode}. "
                       "Maybe some conflict occurs, need manual merge this branch before push it to mirror.")
-                return -101
-            
+                abort_returncode, _, _ = run_cmd(["git", "merge", "--abort"])
+                if abort_returncode != 0:
+                    Logger.error(f"Failed to abort merge on branch {b}, return code: {abort_returncode}. Working tree may be in a dirty state, stopping.")
+                    return -14
+                has_updated_branch_error = True
+                continue
+
             git_push_mirror_cmd = [
                 "git",
                 "push",
@@ -232,11 +240,13 @@ def try_sync_origin_updates_into_mirror(
             ]
             returncode, _, _ = run_cmd(git_push_mirror_cmd)
             if returncode != 0:
-                Logger.error(f"Failed to push branch {b} to mirror {mirror_remote_name}. Perhaps during the sync, the {mirror_remote_name} received new commits, so it might need to be run again.\n")
-                return -11
+                Logger.error(f"Failed to push branch {b} from {origin_remote_name} to {mirror_remote_name}, return code: {returncode}. Perhaps during the sync, the {mirror_remote_name} received new commits, so it might need to be run again.")
+                has_updated_branch_error = True
+                continue
             
         # Handle with origin added branches
         Logger.info("Handle with origin added branches")
+        has_added_branch_error = False
         for b in origin_branch_added:
             Logger.info(f"Handling added origin {origin_remote_name} branch {b} into mirror {mirror_remote_name}")
 
@@ -249,8 +259,9 @@ def try_sync_origin_updates_into_mirror(
             ]
             returncode, _, _ = run_cmd(git_fetch_origin_remote_branch_cmd)
             if returncode != 0:
-                Logger.error(f"Failed to fetch origin remote added branch {b}")
-                return -12
+                Logger.error(f"Failed to fetch origin {origin_remote_name} added branch {b}, return code: {returncode}")
+                has_added_branch_error = True
+                continue
 
             git_push_origin_added_branch_to_mirror_cmd = [
                 "git",
@@ -260,8 +271,12 @@ def try_sync_origin_updates_into_mirror(
             ]
             returncode, _, _ = run_cmd(git_push_origin_added_branch_to_mirror_cmd)
             if returncode != 0:
-                Logger.error(f"Failed to push origin remote added branch {b} on mirror. Perhaps during the sync, the {mirror_remote_name} received new branch {b}, please check it.")
-                return -13
+                Logger.error(f"Failed to push added branch {b} from {origin_remote_name} to {mirror_remote_name}, return code: {returncode}. Perhaps during the sync, the {mirror_remote_name} received new branch {b}, please check it.")
+                has_added_branch_error = True
+                continue
+
+        if has_updated_branch_error or has_added_branch_error:
+            Logger.warning("Some branches failed to sync, but will continue with tag sync since tags do not depend on branch sync.")
 
         # Handle tag change
         git_fetch_mirror_tags_cmd = [
@@ -272,8 +287,8 @@ def try_sync_origin_updates_into_mirror(
         ]
         returncode, _, _ = run_cmd(git_fetch_mirror_tags_cmd)
         if returncode != 0:
-            Logger.error("Failed to fetch tags on mirror")
-            return -14
+            Logger.error(f"Failed to fetch tags from {mirror_remote_name}, return code: {returncode}")
+            return -11
 
         # origin override mirror tags
         git_fetch_origin_tags_cmd = [
@@ -284,8 +299,8 @@ def try_sync_origin_updates_into_mirror(
         ]
         returncode, _, _ = run_cmd(git_fetch_origin_tags_cmd)
         if returncode != 0:
-            Logger.error("Failed to fetch tags on origin")
-            return -15
+            Logger.error(f"Failed to fetch tags from {origin_remote_name}, return code: {returncode}")
+            return -12
     
         git_push_tags_to_mirror_cmd = [
             "git",
@@ -296,10 +311,14 @@ def try_sync_origin_updates_into_mirror(
         ]
         returncode, _, _ = run_cmd(git_push_tags_to_mirror_cmd)
         if returncode != 0:
-            Logger.error("Failed to push tags on mirror")
-            return -16
+            Logger.error(f"Failed to push tags to {mirror_remote_name}, return code: {returncode}")
+            return -13
         
         Logger.info("Finished to pull origin update to mirror")
+        if has_updated_branch_error:
+            return -9
+        if has_added_branch_error:
+            return -10
         return 0
 
     except Exception as e:
@@ -355,13 +374,16 @@ def main() -> int:
         for origin_repo_url, mirror_repo_url in mirror_needed_repo_pair_list:
             returncode = try_sync_origin_updates_into_mirror(origin_repo_url, mirror_repo_url, local_workspace, origin_changed_branch_accept_rules)
             if returncode != 0:
-                Logger.error(f"Failed to sync {origin_repo_url} -> {mirror_repo_url}, return code: {returncode}")
+                Logger.error(f"Failed to sync {origin_repo_url} -> {mirror_repo_url}, return code: {returncode}. "
+                             f"Skipping reverse sync {mirror_repo_url} -> {origin_repo_url} because the forward sync failed.")
                 has_sync_error = True
+                continue
 
             returncode = try_sync_origin_updates_into_mirror(mirror_repo_url, origin_repo_url, local_workspace, mirror_changed_branch_accept_rules)
             if returncode != 0:
                 Logger.error(f"Failed to sync {mirror_repo_url} -> {origin_repo_url}, return code: {returncode}")
                 has_sync_error = True
+                continue
 
         if has_sync_error:
             return -18
