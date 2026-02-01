@@ -17,3 +17,6 @@ venv/
 
 # Log
 .log/
+
+# Claude Code
+.claude/
