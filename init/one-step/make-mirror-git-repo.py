@@ -13,6 +13,16 @@ def try_make_mirror_git_repo(
     cwd = os.getcwd()
     try:
 
+        for repo_url in [origin_repo_url, mirror_repo_url]:
+            hostname = extract_hostname_from_git_url(repo_url)
+            if hostname:
+                if not configure_ssh_host(hostname):
+                    Logger.error(f"Failed to configure SSH host for {hostname}")
+                    return False
+            else:
+                Logger.warning(f"Failed to extract hostname from repo url: {repo_url}")
+                return False
+
         Logger.info(f"Try run make mirror git repo, origin repo url: {origin_repo_url}, mirror repo url: {mirror_repo_url}, local workspace: {local_workspace}.")
         origin_remote_name = "origin"
         mirror_remote_name = "mirror"
@@ -185,8 +195,12 @@ def try_make_mirror_git_repo(
         branch_data_list = {}
         for line in branches_str.splitlines():
             if line.strip():
-                hash_part, ref_part = line.split()
-                branch_name = ref_part.split('/')[-1]
+                parts = line.split()
+                if len(parts) != 2:
+                    Logger.warning(f"Unexpected show-ref output line, skipping: {line}")
+                    continue
+                hash_part, ref_part = parts
+                branch_name = ref_part.removeprefix("refs/heads/")
                 branch_data_list[branch_name] = hash_part
 
         # get local tags data
@@ -203,8 +217,12 @@ def try_make_mirror_git_repo(
         tag_data_list = {}
         for line in tags_str.splitlines():
             if line.strip():
-                hash_part, ref_part = line.split()
-                tag_name = ref_part.split('/')[-1]
+                parts = line.split()
+                if len(parts) != 2:
+                    Logger.warning(f"Unexpected show-ref output line, skipping: {line}")
+                    continue
+                hash_part, ref_part = parts
+                tag_name = ref_part.removeprefix("refs/tags/")
                 tag_data_list[tag_name] = hash_part
 
         # Log

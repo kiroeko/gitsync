@@ -77,8 +77,12 @@ def try_push_git_repo(
         branch_data_list = {}
         for line in branches_str.splitlines():
             if line.strip():
-                hash_part, ref_part = line.split()
-                branch_name = ref_part.split('/')[-1]
+                parts = line.split()
+                if len(parts) != 2:
+                    Logger.warning(f"Unexpected show-ref output line, skipping: {line}")
+                    continue
+                hash_part, ref_part = parts
+                branch_name = ref_part.removeprefix("refs/heads/")
                 branch_data_list[branch_name] = hash_part
 
         # get local tags data
@@ -95,8 +99,12 @@ def try_push_git_repo(
         tag_data_list = {}
         for line in tags_str.splitlines():
             if line.strip():
-                hash_part, ref_part = line.split()
-                tag_name = ref_part.split('/')[-1]
+                parts = line.split()
+                if len(parts) != 2:
+                    Logger.warning(f"Unexpected show-ref output line, skipping: {line}")
+                    continue
+                hash_part, ref_part = parts
+                tag_name = ref_part.removeprefix("refs/tags/")
                 tag_data_list[tag_name] = hash_part
 
         # Log

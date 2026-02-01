@@ -67,14 +67,15 @@ def try_sync_origin_updates_into_mirror(
     ) -> int:
     cwd = os.getcwd()
     try:
-        hostname = extract_hostname_from_git_url(origin_repo_url)
-        if hostname:
-            if not configure_ssh_host(hostname):
-                Logger.error(f"Failed to configure SSH host for {hostname}")
-                return -2
-        else:
-            Logger.warning(f"Failed to extract hostname from remote_repo_ssh_url: {origin_repo_url}")
-            return -3
+        for repo_url in [origin_repo_url, mirror_repo_url]:
+            hostname = extract_hostname_from_git_url(repo_url)
+            if hostname:
+                if not configure_ssh_host(hostname):
+                    Logger.error(f"Failed to configure SSH host for {hostname}")
+                    return -2
+            else:
+                Logger.warning(f"Failed to extract hostname from repo url: {repo_url}")
+                return -3
 
         Logger.info(f"Run try sync origin updates into mirror, origin is {origin_repo_url}, mirror is {mirror_repo_url}.")
         origin_remote_name = "origin"
@@ -153,8 +154,12 @@ def try_sync_origin_updates_into_mirror(
         origin_branches_dict = {}
         for line in origin_branches_str.splitlines():
             if line.strip():
-                commit_hash, ref_part = line.split()
-                branch_name = ref_part.split('/')[-1]
+                parts = line.split()
+                if len(parts) != 2:
+                    Logger.warning(f"Unexpected ls-remote output line in remote {origin_repo_url}, skipping: {line}")
+                    continue
+                commit_hash, ref_part = parts
+                branch_name = ref_part.removeprefix("refs/heads/")
                 origin_branches_dict[branch_name] = commit_hash
 
         # Get mirror remote branch info
@@ -172,8 +177,12 @@ def try_sync_origin_updates_into_mirror(
         mirror_branches_dict = {}
         for line in mirror_branches_str.splitlines():
             if line.strip():
-                commit_hash, ref_part = line.split()
-                branch_name = ref_part.split('/')[-1]
+                parts = line.split()
+                if len(parts) != 2:
+                    Logger.warning(f"Unexpected ls-remote output line in remote {mirror_repo_url}, skipping: {line}")
+                    continue
+                commit_hash, ref_part = parts
+                branch_name = ref_part.removeprefix("refs/heads/")
                 mirror_branches_dict[branch_name] = commit_hash
 
         # get origin branch changes
