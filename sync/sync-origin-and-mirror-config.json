@@ -4,16 +4,12 @@
         ".*"
     ],
     "mirror-changed-branch-accept-rules": [
-        "^mirror/"
+        ".*"
     ],
     "sync-needed-repo-pairs": [
         {
-            "origin-repo-ssh-url": "git@github.com:kiroeko/synctest1.git",
-            "mirror-empty-repo-ssh-url": "git@gitlab.com:kiroeko/synctest1.git"
-        },
-        {
-            "origin-repo-ssh-url": "git@github.com:kiroeko/synctest2.git",
-            "mirror-empty-repo-ssh-url": "git@gitlab.com:kiroeko/synctest2.git"
+            "origin-repo-url": "https://github.com/kiroeko/synctestrepo1.git",
+            "mirror-repo-url": "git@github.com:kiroeko/synctestrepo2.git"
         }
     ]
 }

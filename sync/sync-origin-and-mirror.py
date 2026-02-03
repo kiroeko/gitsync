@@ -69,6 +69,8 @@ def try_sync_origin_updates_into_mirror(
     cwd = os.getcwd()
     try:
         for repo_url in [origin_repo_url, mirror_repo_url]:
+            if repo_url.startswith("http://") or repo_url.startswith("https://"):
+                continue
             hostname = extract_hostname_from_git_url(repo_url)
             if hostname:
                 if not configure_ssh_host(hostname):
@@ -360,8 +362,8 @@ def main() -> int:
 
         mirror_needed_repo_pair_list = []
         for repo_pair in sync_needed_repo_pairs:
-            origin_repo_url = repo_pair["origin-repo-ssh-url"]
-            mirror_repo_url = repo_pair["mirror-empty-repo-ssh-url"]
+            origin_repo_url = repo_pair["origin-repo-url"]
+            mirror_repo_url = repo_pair["mirror-repo-url"]
             mirror_needed_repo_pair_list.append((origin_repo_url, mirror_repo_url))
 
         Logger.info("End of Configuration Parsing.")
