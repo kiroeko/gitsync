@@ -10,3 +10,4 @@ if (-not (Test-Path .venv)) {
 
 # 直接使用虚拟环境中的 pip，避免激活脚本的作用域问题
 .venv\Scripts\python.exe -m pip install -e .
+#.venv\Scripts\python.exe -m pip install -e . --no-deps

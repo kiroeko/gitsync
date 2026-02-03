@@ -387,16 +387,13 @@ def main() -> int:
         for origin_repo_url, mirror_repo_url in mirror_needed_repo_pair_list:
             returncode = try_sync_origin_updates_into_mirror(origin_repo_url, mirror_repo_url, local_workspace, origin_changed_branch_accept_rules)
             if returncode != 0:
-                Logger.error(f"Failed to sync {origin_repo_url} -> {mirror_repo_url}, return code: {returncode}. "
-                             f"Skipping reverse sync {mirror_repo_url} -> {origin_repo_url} because the forward sync failed.")
+                Logger.error(f"Failed to sync {origin_repo_url} -> {mirror_repo_url}, return code: {returncode}. ")
                 has_sync_error = True
-                continue
 
             returncode = try_sync_origin_updates_into_mirror(mirror_repo_url, origin_repo_url, local_workspace, mirror_changed_branch_accept_rules)
             if returncode != 0:
                 Logger.error(f"Failed to sync {mirror_repo_url} -> {origin_repo_url}, return code: {returncode}")
                 has_sync_error = True
-                continue
 
         if has_sync_error:
             return -18
