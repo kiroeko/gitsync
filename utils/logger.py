@@ -1,7 +1,7 @@
 import os
 import threading
 from datetime import datetime
-from filelock import FileLock
+from filelock import FileLock, Timeout
 
 class Logger:
     """一个纯类方法 + 类状态的静态单例 Logger，不允许实例化"""
@@ -35,7 +35,7 @@ class Logger:
                 os.remove(cls._file_path)
 
             # 创建空文件 + 写入创建时间
-            lock = FileLock(cls._lock_path)
+            lock = FileLock(cls._lock_path, timeout=5)
             with lock:
                 with open(cls._file_path, "w", encoding="utf-8") as f:
                     f.write(f"# Log created at {utc_str}\n\n")
@@ -61,15 +61,18 @@ class Logger:
             ts = cls._utc_now()
             log_line = f"{ts} | {level} | {message} | {extra}\n\n"
 
-            lock = FileLock(cls._lock_path)
+            lock = FileLock(cls._lock_path, timeout=5)
             with lock:
                 with open(cls._file_path, "a", encoding="utf-8") as f:
                     f.write(log_line)
                     f.flush()
                     os.fsync(f.fileno())
+        except Timeout:
+            print(f"Log write warning: file lock timeout, skipping file write")
+        except PermissionError:
+            print(f"Log write warning: file is locked by another process, skipping file write")
         except Exception as e:
             print(f"Log write warning: {e}")
-            return False
         finally:
             if log_line is not None:
                 print(log_line)
