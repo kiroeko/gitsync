@@ -61,7 +61,7 @@ class Logger:
             ts = cls._utc_now()
             log_line = f"{ts} | {level} | {message} | {extra}\n\n"
 
-            lock = FileLock(cls._lock_path, timeout=5)
+            lock = FileLock(cls._lock_path, timeout=10)
             with lock:
                 with open(cls._file_path, "a", encoding="utf-8") as f:
                     f.write(log_line)
