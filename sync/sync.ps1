@@ -9,5 +9,5 @@ if (-not (Test-Path $venvPython)) {
 }
 
 $syncScript = Join-Path $PSScriptRoot "sync-origin-and-mirror.py"
-& $venvPython $syncScript
+& $venvPython -u $syncScript
 exit $LASTEXITCODE
