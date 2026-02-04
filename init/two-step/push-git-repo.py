@@ -172,17 +172,6 @@ def main() -> int:
 
         returncode = 0
         for local_repo_path, remote_repo_ssh_url in push_needed_repo_pair_list:
-            hostname = extract_hostname_from_git_url(remote_repo_ssh_url)
-            if hostname:
-                if not configure_ssh_host(hostname):
-                    Logger.warning(f"Failed to configure SSH host for {hostname}")
-                    returncode = -3
-                    continue
-            else:
-                Logger.warning(f"Failed to extract hostname from remote_repo_ssh_url: {remote_repo_ssh_url}")
-                returncode = -4
-                continue
-
             if not try_push_git_repo(local_repo_path, remote_repo_ssh_url):
                 Logger.error(f"Failed to push repo from local path {local_repo_path} to {remote_repo_ssh_url}.")
                 returncode = -5

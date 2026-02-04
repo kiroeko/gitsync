@@ -233,18 +233,6 @@ def main() -> int:
 
         returncode = 0
         for origin_repo_url in fetch_needed_repos:
-            # 从 origin_repo_url 中提取主机名并配置 SSH
-            hostname = extract_hostname_from_git_url(origin_repo_url)
-            if hostname:
-                if not configure_ssh_host(hostname):
-                    Logger.warning(f"Failed to configure SSH host for {hostname}")
-                    returncode = -2
-                    continue
-            else:
-                Logger.warning(f"Failed to extract hostname from origin_repo_url: {origin_repo_url}")
-                returncode = -3
-                continue
-
             failed_times = 0
             while failed_times < max_retry_times:
                 if try_fetch_git_repo(origin_repo_url, local_workspace):

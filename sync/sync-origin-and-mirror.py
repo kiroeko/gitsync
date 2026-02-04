@@ -68,18 +68,6 @@ def try_sync_origin_updates_into_mirror(
     ) -> int:
     cwd = os.getcwd()
     try:
-        for repo_url in [origin_repo_url, mirror_repo_url]:
-            if repo_url.startswith("http://") or repo_url.startswith("https://"):
-                continue
-            hostname = extract_hostname_from_git_url(repo_url)
-            if hostname:
-                if not configure_ssh_host(hostname):
-                    Logger.error(f"Failed to configure SSH host for {hostname}")
-                    return -2
-            else:
-                Logger.warning(f"Failed to extract hostname from repo url: {repo_url}")
-                return -3
-
         Logger.info(f"Run try sync origin updates into mirror, origin is {origin_repo_url}, mirror is {mirror_repo_url}.")
         origin_remote_name = "origin"
         mirror_remote_name = "mirror"

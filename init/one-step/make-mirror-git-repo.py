@@ -13,17 +13,6 @@ def try_make_mirror_git_repo(
         local_workspace: str) -> bool:
     cwd = os.getcwd()
     try:
-
-        for repo_url in [origin_repo_url, mirror_repo_url]:
-            hostname = extract_hostname_from_git_url(repo_url)
-            if hostname:
-                if not configure_ssh_host(hostname):
-                    Logger.error(f"Failed to configure SSH host for {hostname}")
-                    return False
-            else:
-                Logger.warning(f"Failed to extract hostname from repo url: {repo_url}")
-                return False
-
         Logger.info(f"Try run make mirror git repo, origin repo url: {origin_repo_url}, mirror repo url: {mirror_repo_url}, local workspace: {local_workspace}.")
         origin_remote_name = "origin"
         mirror_remote_name = "mirror"
