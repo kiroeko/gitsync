@@ -14,6 +14,70 @@ class BranchChanges(TypedDict):
     originUpdated: list[str]
 
 
+class TagChanges(TypedDict):
+    originAdded: list[str]
+    originUpdated: list[str]
+
+
+def parse_ls_remote_tags(ls_remote_output: str) -> dict[str, str]:
+    """
+    Parse git ls-remote --tags output into {tag_name: hash}.
+    For annotated tags (which have both a tag object line and a ^{} deref line),
+    use the ^{} (dereferenced commit) hash as the comparison value,
+    so we compare actual commits rather than tag object hashes.
+    For lightweight tags, use the single hash directly.
+    """
+    tag_dict = {}
+    for line in ls_remote_output.splitlines():
+        if not line.strip():
+            continue
+        parts = line.split()
+        if len(parts) != 2:
+            Logger.warning(f"Unexpected ls-remote tag output, skipping: {line}")
+            continue
+        hash_val, ref = parts
+        if not ref.startswith("refs/tags/"):
+            # Skip non-tag lines, e.g. "From https://..."
+            continue
+        if ref.endswith("^{}"):
+            # Dereferenced annotated tag - overwrite the tag object hash
+            tag_name = ref.removeprefix("refs/tags/").removesuffix("^{}")
+            tag_dict[tag_name] = hash_val
+        else:
+            tag_name = ref.removeprefix("refs/tags/")
+            # Only set if not already set by a ^{} line
+            if tag_name not in tag_dict:
+                tag_dict[tag_name] = hash_val
+    return tag_dict
+
+
+def get_origin_tag_changes(
+        origin_tag_dict: dict[str, str],
+        mirror_tag_dict: dict[str, str]
+    ) -> TagChanges:
+    """
+    Compare tags between origin and mirror repos.
+    Only detects added and updated tags. Does not handle deletions.
+    """
+    tag_added_list = []
+    tag_updated_list = []
+
+    for tag_name, origin_hash in origin_tag_dict.items():
+        if tag_name in mirror_tag_dict:
+            if origin_hash != mirror_tag_dict[tag_name]:
+                tag_updated_list.append(tag_name)
+                Logger.info(f"Tag '{tag_name}' needs update: origin={origin_hash[:8]}, mirror={mirror_tag_dict[tag_name][:8]}")
+            else:
+                Logger.info(f"Tag '{tag_name}' is already up-to-date: hash={origin_hash[:8]}")
+        else:
+            tag_added_list.append(tag_name)
+
+    return {
+        "originAdded": tag_added_list,
+        "originUpdated": tag_updated_list,
+    }
+
+
 def get_origin_branch_changes(
         origin_branch_dict: dict[str, str],
         mirror_branch_dict: dict[str, str],
@@ -278,49 +342,55 @@ def try_sync_origin_updates_into_mirror(
         if has_updated_branch_error or has_added_branch_error:
             Logger.warning("Some branches failed to sync, but will continue with tag sync since tags do not depend on branch sync.")
 
-        # Handle tag change
-        git_fetch_mirror_tags_cmd = [
-            "git",
-            "fetch",
-            mirror_remote_name,
-            "--tags"
-        ]
-        returncode, _, _ = run_cmd(git_fetch_mirror_tags_cmd)
+        # Handle tag change using ls-remote diff
+        Logger.info("Handle tag changes")
+
+        git_ls_origin_tags_cmd = ["git", "ls-remote", "--tags", origin_remote_name]
+        returncode, origin_tags_str, _ = run_cmd(git_ls_origin_tags_cmd)
         if returncode != 0:
-            Logger.error(f"Failed to fetch tags from {mirror_remote_name}, return code: {returncode}")
+            Logger.error(f"Failed to ls-remote tags from {origin_remote_name}, return code: {returncode}")
             return -11
 
-        # origin override mirror tags
-        git_fetch_origin_tags_cmd = [
-            "git",
-            "fetch",
-            origin_remote_name,
-            "--tags",
-            "--force"
-        ]
-        returncode, _, _ = run_cmd(git_fetch_origin_tags_cmd)
+        git_ls_mirror_tags_cmd = ["git", "ls-remote", "--tags", mirror_remote_name]
+        returncode, mirror_tags_str, _ = run_cmd(git_ls_mirror_tags_cmd)
         if returncode != 0:
-            Logger.error(f"Failed to fetch tags from {origin_remote_name}, return code: {returncode}")
+            Logger.error(f"Failed to ls-remote tags from {mirror_remote_name}, return code: {returncode}")
             return -12
-    
-        git_push_tags_to_mirror_cmd = [
-            "git",
-            "push",
-            mirror_remote_name,
-            "-f",
-            "--tags"
-        ]
-        returncode, _, _ = run_cmd(git_push_tags_to_mirror_cmd)
-        if returncode != 0:
-            Logger.error(f"Failed to push tags to {mirror_remote_name}, return code: {returncode}")
-            return -13
-        
+
+        origin_tag_dict = parse_ls_remote_tags(origin_tags_str)
+        mirror_tag_dict = parse_ls_remote_tags(mirror_tags_str)
+
+        tag_changes = get_origin_tag_changes(origin_tag_dict, mirror_tag_dict)
+        tags_to_sync = tag_changes["originAdded"] + tag_changes["originUpdated"]
+        Logger.info(f"Tag changes: {tag_changes}")
+
+        has_tag_error = False
+        for tag_name in tags_to_sync:
+            Logger.info(f"Syncing tag '{tag_name}' from {origin_remote_name} to {mirror_remote_name}")
+
+            git_fetch_tag_cmd = ["git", "fetch", origin_remote_name, "tag", tag_name, "--force"]
+            returncode, _, _ = run_cmd(git_fetch_tag_cmd)
+            if returncode != 0:
+                Logger.error(f"Failed to fetch tag '{tag_name}' from {origin_remote_name}, return code: {returncode}")
+                has_tag_error = True
+                continue
+
+            git_push_tag_cmd = ["git", "push", mirror_remote_name, f"refs/tags/{tag_name}", "-f"]
+            returncode, _, _ = run_cmd(git_push_tag_cmd)
+            if returncode != 0:
+                Logger.error(f"Failed to push tag '{tag_name}' to {mirror_remote_name}, return code: {returncode}")
+                has_tag_error = True
+                continue
+
         Logger.info("Finished to pull origin update to mirror")
+        returncode_result = 0
         if has_updated_branch_error:
-            return -9
+            returncode_result = -9
         if has_added_branch_error:
-            return -10
-        return 0
+            returncode_result = -10
+        if has_tag_error:
+            returncode_result = -13
+        return returncode_result
 
     except Exception as e:
         Logger.error(f"Error: {e}\n{traceback.format_exc()}")
