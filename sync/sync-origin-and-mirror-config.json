@@ -1,10 +1,10 @@
 {
     "local-workspace": "C:/public/gitsync_workspace",
     "origin-changed-branch-accept-rules": [
-        "^(?!gs/gstarbim).*"
+        "^(?!origin_only).*"
     ],
     "mirror-changed-branch-accept-rules": [
-        "^gs/.*"
+        "^mirror_share/.*"
     ],
     "sync-needed-repo-pairs": [
         {

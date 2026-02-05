@@ -18,6 +18,7 @@ offline_packages/
 
 # Log
 .log/
+*log/
 
 # Claude Code
 .claude/
