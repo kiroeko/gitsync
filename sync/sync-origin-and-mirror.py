@@ -383,18 +383,17 @@ def try_sync_origin_updates_into_mirror(
                 continue
 
         Logger.info("Finished to pull origin update to mirror")
-        returncode_result = 0
         if has_updated_branch_error:
-            returncode_result = -9
+            return -9
         if has_added_branch_error:
-            returncode_result = -10
+            return -10
         if has_tag_error:
-            returncode_result = -13
-        return returncode_result
+            return -13
+        return 0
 
     except Exception as e:
         Logger.error(f"Error: {e}\n{traceback.format_exc()}")
-        return -1
+        return -14
     finally:
         os.chdir(cwd)
 
@@ -436,7 +435,7 @@ def main() -> int:
         returncode, _, _ = run_cmd(git_config_global_coreautocrlf_false_cmd)
         if returncode != 0:
             Logger.error("Failed to close git autocrlf.")
-            return -17
+            return -2
 
         # Sync between two repos.
         Logger.info("Sync between two repos.")
@@ -454,7 +453,7 @@ def main() -> int:
                 has_sync_error = True
 
         if has_sync_error:
-            return -18
+            return -3
         return 0
 
     except Exception as e:
